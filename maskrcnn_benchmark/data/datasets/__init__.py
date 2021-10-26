@@ -5,6 +5,7 @@ from .icdar import IcdarDataset
 from .scut import ScutDataset
 from .synthtext import SynthtextDataset
 from .total_text import TotaltextDataset
+from .benchmark import BenchmarkDataset
 
 __all__ = [
     "COCODataset",
@@ -14,4 +15,5 @@ __all__ = [
     "MixDataset",
     "ScutDataset",
     "TotaltextDataset",
+    "BenchmarkDataset",
 ]

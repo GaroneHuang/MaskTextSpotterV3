@@ -4,26 +4,48 @@ import cv2
 import numpy as np
 
 
+# def char2num(char):
+#     if char in "0123456789":
+#         num = ord(char) - ord("0") + 1
+#     elif char in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ":
+#         num = ord(char.lower()) - ord("a") + 11
+#     else:
+#         num = 0
+#     return num
+
+
+# def num2char(num):
+#     chars = "_0123456789abcdefghijklmnopqrstuvwxyz"
+#     char = chars[num]
+#     # if num >=1 and num <=10:
+#     # 	char = chr(ord('0') + num - 1)
+#     # elif num > 10 and num <= 36:
+#     # 	char = chr(ord('a') + num - 11)
+#     # else:
+#     # 	print('error number:%d'%(num))
+#     # 	exit()
+#     return char
+
+
+def get_char_classes(dict_path):
+    lines = open(dict_path, "r").readlines()
+    char_classes = ""
+    for line in lines:
+        char = line[0]
+        if char != "\n":
+            char_classes += char
+    return char_classes
+
+
 def char2num(char):
-    if char in "0123456789":
-        num = ord(char) - ord("0") + 1
-    elif char in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ":
-        num = ord(char.lower()) - ord("a") + 11
-    else:
-        num = 0
+    char_classes = get_char_classes("datasets/benckmark/dict.txt")
+    num = char_classes.index(char)
     return num
 
 
 def num2char(num):
-    chars = "_0123456789abcdefghijklmnopqrstuvwxyz"
-    char = chars[num]
-    # if num >=1 and num <=10:
-    # 	char = chr(ord('0') + num - 1)
-    # elif num > 10 and num <= 36:
-    # 	char = chr(ord('a') + num - 11)
-    # else:
-    # 	print('error number:%d'%(num))
-    # 	exit()
+    char_classes = get_char_classes("datasets/benckmark/dict.txt")
+    char = char_classes[num]
     return char
 
 

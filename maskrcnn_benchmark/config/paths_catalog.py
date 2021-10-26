@@ -57,6 +57,22 @@ class DatasetCatalog(object):
             "scut-eng-char/train_images",
             "scut-eng-char/train_gts",
         ),
+        "benchmark_pretrain": (
+            "benchmark/",
+            "pretrain",
+        ),
+        "benchmark_train": (
+            "benchmark/",
+            "train",
+        ),
+        "benchmark_test": (
+            "benchmark/",
+            "test",
+        ),
+        "benchmark_val": (
+            "benchmark/",
+            "val",
+        ),
     }
 
     @staticmethod
@@ -170,6 +186,15 @@ class DatasetCatalog(object):
                 gts_dir=gts_dir,
             )
             return dict(args=args, factory="TotaltextDataset")
+        elif "benchmark" in name:
+            data_dir = DatasetCatalog.DATA_DIR
+            attrs = DatasetCatalog.DATASETS[name]
+            args = dict(
+                use_charann=False,
+                dataset_dir=os.path.join(data_dir, attrs[0]),
+                data_subset=attrs[1],
+            )
+            return dict(args=args, factory="BenchmarkDataset")
         raise RuntimeError("Dataset not available: {}".format(name))
 
 
