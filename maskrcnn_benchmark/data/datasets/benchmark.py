@@ -224,9 +224,9 @@ class BenchmarkDataset(object):
                 return words, np.array(keep_boxes), charsboxes, segmentations, labels
             else:
                 charbbs = np.zeros((10,), dtype=np.float32)
-                if len(charsboxes) == 0:
-                    for _ in range(len(words)):
-                        charsboxes.append([charbbs])
+                charsboxes = []
+                for _ in range(len(words)):
+                    charsboxes.append([charbbs])
                 return words, np.array(keep_boxes), charsboxes, segmentations, labels
         else:
             words.append("")

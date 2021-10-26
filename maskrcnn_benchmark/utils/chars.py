@@ -38,13 +38,13 @@ def get_char_classes(dict_path):
 
 
 def char2num(char):
-    char_classes = get_char_classes("datasets/benckmark/dict.txt")
+    char_classes = get_char_classes("datasets/benchmark/dict.txt")
     num = char_classes.index(char)
     return num
 
 
 def num2char(num):
-    char_classes = get_char_classes("datasets/benckmark/dict.txt")
+    char_classes = get_char_classes("datasets/benchmark/dict.txt")
     char = char_classes[num]
     return char
 
