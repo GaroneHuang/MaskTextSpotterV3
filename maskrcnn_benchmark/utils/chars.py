@@ -29,12 +29,18 @@ from maskrcnn_benchmark.charset import char_classes
 
 
 def char2num(char):
-    num = char_classes.index(char)
+    try:
+        num = char_classes.index(char)
+    except ValueError:
+        num = len(char_classes)
     return num
 
 
 def num2char(num):
-    char = char_classes[num]
+    if num < len(char_classes):
+        char = char_classes[num]
+    else:
+        char = "#"
     return char
 
 

@@ -257,7 +257,10 @@ class BenchmarkDataset(object):
         return loc
 
     def char2num(self, c):
-        num = self.char_classes.index(c)
+        try:
+            num = self.char_classes.index(c)
+        except ValueError:
+            num = len(self.char_classes)
         return num
 
     def __len__(self):
