@@ -11,7 +11,6 @@ from maskrcnn_benchmark.structures.segmentation_mask import (
     SegmentationCharMask,
     SegmentationMask,
 )
-import matplotlib.pyplot as plt
 
 
 class BenchmarkDataset(object):
