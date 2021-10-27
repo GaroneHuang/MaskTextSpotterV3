@@ -60,7 +60,9 @@ class BenchmarkDataset(object):
     #     return gt_keys
 
     def get_char_classes(self, dict_path):
-        lines = open(dict_path, "r").readlines()
+        f_charset =  open(dict_path, "r")
+        lines = f_charset.readlines()
+        f_charset.close()
         char_classes = ""
         for line in lines:
             char = line[0]
@@ -70,7 +72,9 @@ class BenchmarkDataset(object):
 
     def __getitem__(self, index):
         # gt = self.gts['annotation'][self.gt_keys[index]]
-        gt = json.load(open(os.path.join(self.dataset_dir, self.gts_dir, self.gtnames[index]), "r"))
+        f_gt = open(os.path.join(self.dataset_dir, self.gts_dir, self.gtnames[index]), "r")
+        gt = json.load(f_gt)
+        f_gt.close()
         image_path = os.path.join(self.dataset_dir, gt['name'])
         imname = os.path.basename(image_path)
         img = Image.open(image_path).convert("RGB")
