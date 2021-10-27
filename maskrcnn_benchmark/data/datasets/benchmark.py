@@ -22,41 +22,42 @@ class BenchmarkDataset(object):
         self.transforms = transforms
         self.ignore_difficult = ignore_difficult
         if self.data_subset == "pretrain":
-            gts_path = "annotations/full_pretrain.json"
+            self.gts_dir = "annotations_separate/full_pretrain"
         elif self.data_subset == "train":
-            gts_path = "annotations/full_train.json"
+            self.gts_dir = "annotations_separate/full_train"
         elif self.data_subset == "test":
-            gts_path = "annotations/full_test.json"
+            self.gts_dir = "annotations_separate/full_test"
         else:
-            gts_path = "annotations/full_val.json"
-        self.gts = json.load(open(os.path.join(self.dataset_dir, gts_path), "r"))
-        is_filter = (self.ignore_difficult and (data_subset == "pretrain" or data_subset == "train"))
-        self.gt_keys = self.parse_gt_keys(is_filter)
+            self.gts_dir = "annotations_separate/full_val"
+        # self.gts = json.load(open(os.path.join(self.dataset_dir, gts_path), "r"))
+        # is_filter = (self.ignore_difficult and (data_subset == "pretrain" or data_subset == "train"))
+        # self.gt_keys = self.parse_gt_keys(is_filter)
+        self.gtnames = os.listdir(os.path.join(self.dataset_dir, self.gts_dir))
         self.min_proposal_size = 2
         self.char_classes = self.get_char_classes(os.path.join(self.dataset_dir, "dict.txt"))
         self.vis = True
 
-    def parse_gt_keys(self, is_filter):
-        if is_filter:
-            gt_keys = []
-            for gt_key in self.gts['annotation'].keys():
-                has_positive = False
-                gt = self.gts['annotation'][gt_key]
-                for granularity in gt['annotations']:
-                    for box in gt['annotations'][granularity]:
-                        if box['anno_cat'] == 'standard' and box['ignore'] == 0:
-                            is_no_valid_box = len(box['xywh_rect']) != 4 and len(box['quad']) != 8 and \
-                                                (len(box['quad']) <= 0 or len(box['quad'])%2 != 0)
-                            if not is_no_valid_box:
-                                has_positive = True
-                                break
-                    if has_positive:
-                        break
-                if has_positive:
-                    gt_keys.append(gt_key)
-        else:
-            gt_keys = list(self.gts['annotation'].keys())
-        return gt_keys
+    # def parse_gt_keys(self, is_filter):
+    #     if is_filter:
+    #         gt_keys = []
+    #         for gt_key in self.gts['annotation'].keys():
+    #             has_positive = False
+    #             gt = self.gts['annotation'][gt_key]
+    #             for granularity in gt['annotations']:
+    #                 for box in gt['annotations'][granularity]:
+    #                     if box['anno_cat'] == 'standard' and box['ignore'] == 0:
+    #                         is_no_valid_box = len(box['xywh_rect']) != 4 and len(box['quad']) != 8 and \
+    #                                             (len(box['quad']) <= 0 or len(box['quad'])%2 != 0)
+    #                         if not is_no_valid_box:
+    #                             has_positive = True
+    #                             break
+    #                 if has_positive:
+    #                     break
+    #             if has_positive:
+    #                 gt_keys.append(gt_key)
+    #     else:
+    #         gt_keys = list(self.gts['annotation'].keys())
+    #     return gt_keys
 
     def get_char_classes(self, dict_path):
         lines = open(dict_path, "r").readlines()
@@ -68,7 +69,8 @@ class BenchmarkDataset(object):
         return char_classes
 
     def __getitem__(self, index):
-        gt = self.gts['annotation'][self.gt_keys[index]]
+        # gt = self.gts['annotation'][self.gt_keys[index]]
+        gt = json.load(open(os.path.join(self.dataset_dir, self.gts_dir, self.gtnames[index]), "r"))
         image_path = os.path.join(self.dataset_dir, gt['name'])
         imname = os.path.basename(image_path)
         img = Image.open(image_path).convert("RGB")
@@ -264,5 +266,5 @@ class BenchmarkDataset(object):
         return num
 
     def __len__(self):
-        return len(self.gt_keys)
+        return len(self.gtnames)
 
