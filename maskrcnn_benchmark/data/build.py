@@ -48,8 +48,8 @@ def build_dataset(cfg, dataset_list, transforms, dataset_catalog, is_train=True)
     # for training, concatenate all datasets into a single one
     dataset = datasets[0]
     if len(datasets) > 1:
-        dataset = D.MixDataset(datasets, cfg.DATASETS.RATIOS)
-    #    dataset = D.ConcatDataset(datasets)
+        # dataset = D.MixDataset(datasets, cfg.DATASETS.RATIOS)
+        dataset = D.ConcatDataset(datasets)
 
     return [dataset]
 

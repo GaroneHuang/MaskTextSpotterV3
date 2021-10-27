@@ -60,7 +60,7 @@ SEQUENCE:
   MAX_LENGTH: 32
   TEACHER_FORCE_RATIO: 1.0
 DATASETS:
-  TRAIN: ("benchmark_train",)
+  TRAIN: ("benchmark_pretrain", "benchmark_train")
   # TRAIN: ("synthtext_train","icdar_2013_train","icdar_2015_train","scut-eng-char_train","total_text_train")
   # RATIOS: [0.25,0.25,0.25,0.125,0.125]
   TEST: ("benchmark_test",)
@@ -73,22 +73,22 @@ DATALOADER:
   NUM_WORKERS: 4
   ASPECT_RATIO_GROUPING: False
 SOLVER:
-  BASE_LR: 0.002 #0.02
+  BASE_LR: 0.01 #0.02
   WARMUP_FACTOR: 0.1
-  WEIGHT_DECAY: 0.0001
-  STEPS: (100000, 200000)
+  WEIGHT_DECAY: 0.001
+  STEPS: (170000, 330000)
   MAX_ITER: 500000
-  IMS_PER_BATCH: 1
+  IMS_PER_BATCH: 4
   RESUME: True
   DISPLAY_FREQ: 20
-OUTPUT_DIR: "./output/benchmark/train"
+OUTPUT_DIR: "./output/benchmark/pretrain"
 TEST:
   VIS: False
   CHAR_THRESH: 192
   IMS_PER_BATCH: 1
 INPUT:
-  MIN_SIZE_TRAIN: (600, 800)
+  MIN_SIZE_TRAIN: (600, 672, 704, 736, 768, 800, 832, 864, 896)
   # MIN_SIZE_TRAIN: (800, 1000, 1200, 1400)
-  MAX_SIZE_TRAIN: 2333
-  MIN_SIZE_TEST: 1440
-  MAX_SIZE_TEST: 4000
+  MAX_SIZE_TRAIN: 1600
+  MIN_SIZE_TEST: 1000
+  MAX_SIZE_TEST: 1600
