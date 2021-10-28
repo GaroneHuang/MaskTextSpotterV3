@@ -35,7 +35,7 @@ class BenchmarkDataset(object):
         self.gtnames = os.listdir(os.path.join(self.dataset_dir, self.gts_dir))
         self.min_proposal_size = 2
         self.char_classes = self.get_char_classes(os.path.join(self.dataset_dir, "dict.txt"))
-        self.vis = True
+        self.vis = False
 
     # def parse_gt_keys(self, is_filter):
     #     if is_filter:
