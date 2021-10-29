@@ -5,12 +5,14 @@ import torch
 from PIL import Image, ImageDraw
 from shapely.geometry import Polygon
 from functools import reduce
+import copy
 from maskrcnn_benchmark.structures.bounding_box import BoxList
 from maskrcnn_benchmark.structures.segmentation_mask import (
     CharPolygons,
     SegmentationCharMask,
     SegmentationMask,
 )
+from maskrcnn_benchmark.charset import charset
 
 
 class BenchmarkDataset(object):
@@ -34,7 +36,7 @@ class BenchmarkDataset(object):
         # self.gt_keys = self.parse_gt_keys(is_filter)
         self.gtnames = os.listdir(os.path.join(self.dataset_dir, self.gts_dir))
         self.min_proposal_size = 2
-        self.char_classes = self.get_char_classes(os.path.join(self.dataset_dir, "dict.txt"))
+        self.char_classes = copy.deepcopy(charset)
         self.vis = False
 
     # def parse_gt_keys(self, is_filter):
@@ -59,16 +61,6 @@ class BenchmarkDataset(object):
     #         gt_keys = list(self.gts['annotation'].keys())
     #     return gt_keys
 
-    def get_char_classes(self, dict_path):
-        f_charset =  open(dict_path, "r")
-        lines = f_charset.readlines()
-        f_charset.close()
-        char_classes = ""
-        for line in lines:
-            char = line[0]
-            if char != "\n":
-                char_classes += char
-        return char_classes
 
     def __getitem__(self, index):
         # gt = self.gts['annotation'][self.gt_keys[index]]

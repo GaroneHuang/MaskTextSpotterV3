@@ -1,7 +1,8 @@
 import os
-
 import cv2
 import numpy as np
+import copy
+from maskrcnn_benchmark.charset import charset
 
 # def char2num(char):
 #     if char in "0123456789":
@@ -25,20 +26,9 @@ import numpy as np
 #     # 	exit()
 #     return char
 
-def get_char_classes(dict_path):
-    f_charset =  open(dict_path, "r")
-    lines = f_charset.readlines()
-    f_charset.close()
-    char_classes = ""
-    for line in lines:
-        char = line[0]
-        if char != "\n":
-            char_classes += char
-    return char_classes
-
 
 def char2num(char):
-    char_classes = get_char_classes("datasets/benchmark/dict.txt")
+    char_classes = copy.deepcopy(charset)
     try:
         num = char_classes.index(char)
     except ValueError:
@@ -47,7 +37,7 @@ def char2num(char):
 
 
 def num2char(num):
-    char_classes = get_char_classes("datasets/benchmark/dict.txt")
+    char_classes = copy.deepcopy(charset)
     if num < len(char_classes):
         char = char_classes[num]
     else:
