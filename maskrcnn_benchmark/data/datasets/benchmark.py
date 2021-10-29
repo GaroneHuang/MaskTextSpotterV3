@@ -89,7 +89,7 @@ class BenchmarkDataset(object):
         masks = SegmentationMask(segmentations, img.size)
         target.add_field("masks", masks)
         char_masks = SegmentationCharMask(
-            charsbbs, words=words, use_char_ann=use_char_ann, size=img.size, char_num_classes=len(self.char_classes)
+            charsbbs, words=words, use_char_ann=use_char_ann, size=img.size, char_num_classes=len(self.char_classes) + 1
         )
         target.add_field("char_masks", char_masks)
         if self.transforms is not None:
@@ -126,7 +126,7 @@ class BenchmarkDataset(object):
         #     # print(gt)
         #     # plt.imshow(new)
         #     # plt.show()
-        return img, target, imname
+        return img, target, image_path
 
     def creat_color_map(self, n_class, width):
         splits = int(np.ceil(np.power((n_class * 1.0), 1.0 / 3)))
