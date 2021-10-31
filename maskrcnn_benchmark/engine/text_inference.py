@@ -12,18 +12,19 @@ import torch
 from maskrcnn_benchmark.utils.chars import char2num, get_tight_rect, getstr_grid
 from PIL import Image, ImageDraw
 from tqdm import tqdm
+import json
 
 from ..utils.comm import is_main_process, scatter_gather, synchronize
 import pdb
 
 # TO DO: format output with dictionnary
-def compute_on_dataset(model, data_loader, device, cfg):
+def compute_on_dataset(model, data_loader, device, cfg, output_folder, model_name):
     model.eval()
-    results_dict = {}
-    seg_results = []
     cpu_device = torch.device("cpu")
     total_time = 0
     for _, batch in tqdm(enumerate(data_loader)):
+        results_dict = {}
+        seg_results = []
         images, targets, image_paths = batch
         images = images.to(device)
         with torch.no_grad():
@@ -36,6 +37,7 @@ def compute_on_dataset(model, data_loader, device, cfg):
                 ) 
                 # if cfg.MODEL.MASK_ON and predictions is not None:
                 if predictions is not None:
+                    # 这里是本次实验进入的代码
                     if cfg.MODEL.CHAR_MASK_ON or cfg.SEQUENCE.SEQ_ON:
                         global_predictions = predictions[0]
                         char_predictions = predictions[1]
@@ -103,8 +105,14 @@ def compute_on_dataset(model, data_loader, device, cfg):
                                 ]
                             }
                         )
-    return results_dict, seg_results
-
+        prepare_results_for_evaluation(
+            results_dict,
+            output_folder,
+            model_name,
+            seg_predictions=seg_results,
+            vis=cfg.TEST.VIS,
+            cfg=cfg
+        )
 
 def polygon2rbox(polygon, image_height, image_width):
     poly = np.array(polygon).reshape((-1, 2))
@@ -194,36 +202,49 @@ def _accumulate_predictions_from_multiple_gpus(predictions_per_gpu):
     return predictions
 
 
-def format_output(out_dir, boxes, img_name):
+def format_output(out_dir, boxes, img_name, img_path):
     with open(
         os.path.join(out_dir, "res_" + img_name.split(".")[0] + ".txt"), "wt"
     ) as res:
         ## char score save dir
         ssur_name = os.path.join(out_dir, "res_" + img_name.split(".")[0])
+        box_dicts = []
         for i, box in enumerate(boxes):
             save_name = ssur_name + "_" + str(i) + ".pkl"
             save_dict = {}
-            if "total_text" in out_dir or "cute80" in out_dir:
-                # np.save(save_name, box[-2])
-                save_dict["seg_char_scores"] = box[-3]
-                save_dict["seq_char_scores"] = box[-2]
-                box = (
-                    ",".join([str(x) for x in box[:4]])
-                    + ";"
-                    + ",".join([str(x) for x in box[4 : 4 + int(box[-1])]])
-                    + ";"
-                    + ",".join([str(x) for x in box[4 + int(box[-1]) : -3]])
-                    + ","
-                    + save_name
-                )
-            else:
-                save_dict["seg_char_scores"] = box[-2]
-                save_dict["seq_char_scores"] = box[-1]
-                np.save(save_name, box[-1])
-                box = ",".join([str(x) for x in box[:-2]]) + "," + save_name
-            with open(save_name, "wb") as f:
-                pickle.dump(save_dict, f, protocol=2)
-            res.write(box + "\n")
+            result_str = img_path + ","
+            # if "total_text" in out_dir or "cute80" in out_dir:
+            #     # np.save(save_name, box[-2])
+            #     save_dict["seg_char_scores"] = box[-3]
+            #     save_dict["seq_char_scores"] = box[-2]
+            #     box = (
+            #         ",".join([str(x) for x in box[:4]])
+            #         + ";"
+            #         + ",".join([str(x) for x in box[4 : 4 + int(box[-1])]])
+            #         + ";"
+            #         + ",".join([str(x) for x in box[4 + int(box[-1]) : -3]])
+            #         + ";"
+            #         + save_name
+            #     )
+            # else:
+            save_dict["seg_char_scores"] = box[-2]
+            save_dict["seq_char_scores"] = box[-1]
+            # np.save(save_name, box[-1])
+            # box = ",".join([str(x) for x in box[:-2]])
+            box_dict = {
+                'box': box['box'],
+                'polygon': box['polygon'],
+                'word': box['word'],
+            }
+            box_dicts.append(box_dict)
+            # with open(save_name, "wb") as f:
+            #     pickle.dump(save_dict, f, protocol=2)
+            # res.write(box + "\n")
+        output_dict = {
+            'img_path': img_path,
+            'preds': box_dicts,
+        }
+        json.dump(output_dict, res)
 
 def format_seg_output(results_dir, rotated_boxes_this_image, polygons_this_image, scores, img_name, ratio):
     height_ratio, width_ratio = ratio
@@ -282,7 +303,7 @@ def creat_color_map(n_class, width):
 
 def visualization(image, polygons, resize_ratio, colors, char_polygons=None, words=None):
     draw = ImageDraw.Draw(image, "RGBA")
-    for polygon in polygons:
+    for i, polygon in enumerate(polygons):
         # draw.polygon(polygon, fill=None, outline=(0, 255, 0, 255))
         # print(polygon)
         polygon.append(polygon[0])
@@ -290,6 +311,7 @@ def visualization(image, polygons, resize_ratio, colors, char_polygons=None, wor
         # print(polygon)
         color = '#33FF33'
         draw.line(polygon, fill=color, width=5)
+        draw.text((polygon[-4], polygon[-3]), words[i])
     # if char_polygons is not None:
     #     for i, char_polygon in enumerate(char_polygons):
     #         for j, polygon in enumerate(char_polygon):
@@ -349,32 +371,32 @@ def prepare_results_for_evaluation(
         seg_visu_dir = os.path.join(output_folder, model_name + "_seg_visu")
         if not os.path.isdir(seg_visu_dir):
             os.mkdir(seg_visu_dir)
-    if len(seg_predictions) > 0:
-        for seg_prediction in seg_predictions:
-            image_paths, proposals, rotated_boxes, polygons, seg_maps, seg_scores = (
-                seg_prediction[0],
-                seg_prediction[1],
-                seg_prediction[2],
-                seg_prediction[3],
-                seg_prediction[4],
-                seg_prediction[5],
-            )
-            for batch_id in range(len(image_paths)):
-                image_path = image_paths[batch_id]
-                im_name = image_path.split("/")[-1]
-                image = cv2.imread(image_path)
-                height, width, _ = image.shape
-                rotated_boxes_this_image = rotated_boxes[batch_id]
-                polygons_this_image = polygons[batch_id]
-                proposals_this_image = proposals[batch_id]
-                seg_map = seg_maps[batch_id]
-                seg_score = seg_scores[batch_id]
-                height, width, _ = image.shape
-                height_ratio = height / proposals_this_image.size[1]
-                width_ratio = width / proposals_this_image.size[0]
-                format_seg_output(seg_results_dir, rotated_boxes_this_image, polygons_this_image, seg_score, im_name, (height_ratio, width_ratio))
-                if vis:
-                    vis_seg_map(image_path, seg_map, rotated_boxes_this_image, polygons_this_image, proposals_this_image, seg_visu_dir)
+    # if len(seg_predictions) > 0:
+    #     for seg_prediction in seg_predictions:
+    #         image_paths, proposals, rotated_boxes, polygons, seg_maps, seg_scores = (
+    #             seg_prediction[0],
+    #             seg_prediction[1],
+    #             seg_prediction[2],
+    #             seg_prediction[3],
+    #             seg_prediction[4],
+    #             seg_prediction[5],
+    #         )
+    #         for batch_id in range(len(image_paths)):
+    #             image_path = image_paths[batch_id]
+    #             im_name = image_path.split("/")[-1]
+    #             image = cv2.imread(image_path)
+    #             height, width, _ = image.shape
+    #             rotated_boxes_this_image = rotated_boxes[batch_id]
+    #             polygons_this_image = polygons[batch_id]
+    #             proposals_this_image = proposals[batch_id]
+    #             seg_map = seg_maps[batch_id]
+    #             seg_score = seg_scores[batch_id]
+    #             height, width, _ = image.shape
+    #             height_ratio = height / proposals_this_image.size[1]
+    #             width_ratio = width / proposals_this_image.size[0]
+    #             format_seg_output(seg_results_dir, rotated_boxes_this_image, polygons_this_image, seg_score, im_name, (height_ratio, width_ratio))
+    #             if vis:
+    #                 vis_seg_map(image_path, seg_map, rotated_boxes_this_image, polygons_this_image, proposals_this_image, seg_visu_dir)
     if (not cfg.MODEL.TRAIN_DETECTION_ONLY):
         for image_path, prediction in predictions.items():
             im_name = image_path.split("/")[-1]
@@ -459,40 +481,44 @@ def prepare_results_for_evaluation(
                     seq_char_scores = [1.0, 1.0, 1.0]
                     seq_score = 1.0
                     detailed_seq_score = None
-                if "total_text" in output_folder or "cute80" in output_folder:
-                    result_log = (
-                        [int(x * 1.0) for x in box[:4]]
-                        + polygon
-                        + [word]
-                        + [seq_word]
-                        + [score]
-                        + [rec_score]
-                        + [seq_score]
-                        + [char_score]
-                        + [detailed_seq_score]
-                        + [len(polygon)]
-                    )
-                else:
-                    result_log = (
-                        [int(x * 1.0) for x in box[:4]]
-                        + polygon
-                        + [word]
-                        + [seq_word]
-                        + [score]
-                        + [rec_score]
-                        + [seq_score]
-                        + [char_score]
-                        + [detailed_seq_score]
-                    )
+                # if "total_text" in output_folder or "cute80" in output_folder:
+                #     result_log = (
+                #         [int(x * 1.0) for x in box[:4]]
+                #         + polygon
+                #         + [word]
+                #         + [seq_word]
+                #         + [score]
+                #         + [rec_score]
+                #         + [seq_score]
+                #         + [char_score]
+                #         + [detailed_seq_score]
+                #         + [len(polygon)]
+                #     )
+                # result_log = (
+                #     [int(x * 1.0) for x in box[:4]]
+                #     + polygon
+                #     + [word]
+                #     + [seq_word]
+                #     + [score]
+                #     + [rec_score]
+                #     + [seq_score]
+                #     + [char_score]
+                #     + [detailed_seq_score]
+                # )
+                result_log = {
+                    'box': [int(x * 1.0) for x in box[:4]],
+                    'polygon': polygon,
+                    'word': seq_word,
+                }
                 result_logs.append(result_log)
             if vis:
                 colors = creat_color_map(37, 255)
                 if cfg.MODEL.CHAR_MASK_ON:
                     visualization(img, polygons, resize_ratio, colors, char_polygons, words)
                 else:
-                    visualization(img, polygons, resize_ratio, colors)
+                    visualization(img, polygons, resize_ratio, colors, words=seq_words)
                 img.save(os.path.join(visu_dir, im_name))
-            format_output(results_dir, result_logs, im_name)
+            format_output(results_dir, result_logs, im_name, image_path)
 
 
 def inference(
@@ -530,31 +556,31 @@ def inference(
         logger.info("Start evaluation on {} images".format(len(dataset)))
         start_time = time.time()
         predictions, seg_predictions = compute_on_dataset(
-            model, data_loader, device, cfg
+            model, data_loader, device, cfg, output_folder, model_name
         )
         # wait for all processes to complete before measuring the time
-        synchronize()
-        total_time = time.time() - start_time
-        total_time_str = str(datetime.timedelta(seconds=total_time))
-        logger.info(
-            "Total inference time: {} ({} s / img per device, on {} devices)".format(
-                total_time_str, total_time * num_devices / len(dataset), num_devices
-            )
-        )
+        # synchronize()
+        # total_time = time.time() - start_time
+        # total_time_str = str(datetime.timedelta(seconds=total_time))
+        # logger.info(
+        #     "Total inference time: {} ({} s / img per device, on {} devices)".format(
+        #         total_time_str, total_time * num_devices / len(dataset), num_devices
+        #     )
+        # )
 
         # predictions = _accumulate_predictions_from_multiple_gpus(predictions)
         # if not is_main_process():
         # 	return
 
-        if output_folder:
-            torch.save(predictions, predictions_path)
-            torch.save(seg_predictions, seg_predictions_path)
+        # if output_folder:
+        #     torch.save(predictions, predictions_path)
+        #     torch.save(seg_predictions, seg_predictions_path)
 
-    prepare_results_for_evaluation(
-        predictions,
-        output_folder,
-        model_name,
-        seg_predictions=seg_predictions,
-        vis=cfg.TEST.VIS,
-        cfg=cfg
-    )
+    # prepare_results_for_evaluation(
+    #     predictions,
+    #     output_folder,
+    #     model_name,
+    #     seg_predictions=seg_predictions,
+    #     vis=cfg.TEST.VIS,
+    #     cfg=cfg
+    # )
