@@ -227,8 +227,8 @@ def format_output(out_dir, boxes, img_name, img_path):
             #         + save_name
             #     )
             # else:
-            save_dict["seg_char_scores"] = box[-2]
-            save_dict["seq_char_scores"] = box[-1]
+            # save_dict["seg_char_scores"] = box[-2]
+            # save_dict["seq_char_scores"] = box[-1]
             # np.save(save_name, box[-1])
             # box = ",".join([str(x) for x in box[:-2]])
             box_dict = {

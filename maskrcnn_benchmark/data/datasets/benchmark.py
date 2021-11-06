@@ -249,7 +249,7 @@ class BenchmarkDataset(object):
             loc = quad
         elif len(xywh_rect) == 4:
             x, y, w, h = xywh_rect
-            loc = [x-w/2, y-h/2, x+w/2, y-h/2, x+w/2, y+h/2, x-w/2, y+h/2]
+            loc = [x, y, x+w, y, x+w, y+h, x, y+h]
         else:
             loc = None
         return loc
