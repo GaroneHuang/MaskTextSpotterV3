@@ -134,60 +134,60 @@ def mask2polygon(mask, box, im_size, threshold=0.5, output_folder=None):
     poly_map = poly_map.astype(np.float32) / 255
     poly_map = cv2.GaussianBlur(poly_map, (3, 3), sigmaX=3)
     ret, poly_map = cv2.threshold(poly_map, threshold, 1, cv2.THRESH_BINARY)
-    if "total_text" in output_folder or "cute80" in output_folder:
-        SE1 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-        poly_map = cv2.erode(poly_map, SE1)
-        poly_map = cv2.dilate(poly_map, SE1)
-        poly_map = cv2.morphologyEx(poly_map, cv2.MORPH_CLOSE, SE1)
-        try:
-            _, contours, _ = cv2.findContours(
-                (poly_map * 255).astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE
-            )
-        except:
-            contours, _ = cv2.findContours(
-                (poly_map * 255).astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE
-            )
-        if len(contours) == 0:
-            # print(contours)
-            # print(len(contours))
-            return None
-        max_area = 0
-        max_cnt = contours[0]
-        for cnt in contours:
-            area = cv2.contourArea(cnt)
-            if area > max_area:
-                max_area = area
-                max_cnt = cnt
-        # perimeter = cv2.arcLength(max_cnt, True)
-        epsilon = 0.01 * cv2.arcLength(max_cnt, True)
-        approx = cv2.approxPolyDP(max_cnt, epsilon, True)
-        pts = approx.reshape((-1, 2))
-        pts[:, 0] = pts[:, 0] + box[0]
-        pts[:, 1] = pts[:, 1] + box[1]
-        polygon = list(pts.reshape((-1,)))
-        polygon = list(map(int, polygon))
-        if len(polygon) < 6:
-            return None
-    else:
-        SE1 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-        poly_map = cv2.erode(poly_map, SE1)
-        poly_map = cv2.dilate(poly_map, SE1)
-        poly_map = cv2.morphologyEx(poly_map, cv2.MORPH_CLOSE, SE1)
-        idy, idx = np.where(poly_map == 1)
-        xy = np.vstack((idx, idy))
-        xy = np.transpose(xy)
-        hull = cv2.convexHull(xy, clockwise=True)
-        # reverse order of points.
-        if hull is None:
-            return None
-        hull = hull[::-1]
-        # find minimum area bounding box.
-        rect = cv2.minAreaRect(hull)
-        corners = cv2.boxPoints(rect)
-        corners = np.array(corners, dtype="int")
-        pts = get_tight_rect(corners, box[0], box[1], image_height, image_width, 1)
-        polygon = [x * 1.0 for x in pts]
-        polygon = list(map(int, polygon))
+    # if "total_text" in output_folder or "cute80" in output_folder:
+    SE1 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    poly_map = cv2.erode(poly_map, SE1)
+    poly_map = cv2.dilate(poly_map, SE1)
+    poly_map = cv2.morphologyEx(poly_map, cv2.MORPH_CLOSE, SE1)
+    try:
+        _, contours, _ = cv2.findContours(
+            (poly_map * 255).astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE
+        )
+    except:
+        contours, _ = cv2.findContours(
+            (poly_map * 255).astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE
+        )
+    if len(contours) == 0:
+        # print(contours)
+        # print(len(contours))
+        return None
+    max_area = 0
+    max_cnt = contours[0]
+    for cnt in contours:
+        area = cv2.contourArea(cnt)
+        if area > max_area:
+            max_area = area
+            max_cnt = cnt
+    # perimeter = cv2.arcLength(max_cnt, True)
+    epsilon = 0.01 * cv2.arcLength(max_cnt, True)
+    approx = cv2.approxPolyDP(max_cnt, epsilon, True)
+    pts = approx.reshape((-1, 2))
+    pts[:, 0] = pts[:, 0] + box[0]
+    pts[:, 1] = pts[:, 1] + box[1]
+    polygon = list(pts.reshape((-1,)))
+    polygon = list(map(int, polygon))
+    if len(polygon) < 6:
+        return None
+    # else:
+    #     SE1 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    #     poly_map = cv2.erode(poly_map, SE1)
+    #     poly_map = cv2.dilate(poly_map, SE1)
+    #     poly_map = cv2.morphologyEx(poly_map, cv2.MORPH_CLOSE, SE1)
+    #     idy, idx = np.where(poly_map == 1)
+    #     xy = np.vstack((idx, idy))
+    #     xy = np.transpose(xy)
+    #     hull = cv2.convexHull(xy, clockwise=True)
+    #     # reverse order of points.
+    #     if hull is None:
+    #         return None
+    #     hull = hull[::-1]
+    #     # find minimum area bounding box.
+    #     rect = cv2.minAreaRect(hull)
+    #     corners = cv2.boxPoints(rect)
+    #     corners = np.array(corners, dtype="int")
+    #     pts = get_tight_rect(corners, box[0], box[1], image_height, image_width, 1)
+    #     polygon = [x * 1.0 for x in pts]
+    #     polygon = list(map(int, polygon))
     return polygon
 
 
